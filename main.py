@@ -1,5 +1,4 @@
 import os
-import requests
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import tensorflow as tf
@@ -8,9 +7,9 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.inception_v3 import preprocess_input
 import numpy as np
 from PIL import Image, ImageEnhance, UnidentifiedImageError
-import cv2
 import io
 import logging
+import cv2
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -18,26 +17,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Repository URL for the model
-MODEL_REPO_URL = "https://raw.githubusercontent.com/Youssef18118/plantAppLive/refs/heads/main/plant_disease_model_inception.h5?token=GHSAT0AAAAAAC7RPJ4CIZEAXYRMPGKTXHQ2Z554AWA"
+# Model path
 model_path = "plant_disease_model_inception.h5"
-
-# Function to download model from repository
-def download_model():
-    if not os.path.exists(model_path):
-        logger.info("Downloading model from repository...")
-        try:
-            response = requests.get(MODEL_REPO_URL)
-            response.raise_for_status()  # Raise an error for bad status codes
-            with open(model_path, "wb") as file:
-                file.write(response.content)
-            logger.info("Model downloaded successfully!")
-        except Exception as e:
-            logger.error(f"Failed to download model: {e}")
-            raise HTTPException(status_code=500, detail="Failed to download model")
-
-# Download model before loading
-download_model()
 
 # Load model
 try:
