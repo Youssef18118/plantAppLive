@@ -1,5 +1,5 @@
 import os
-import gdown
+import requests
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import tensorflow as tf
@@ -18,17 +18,23 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Google Drive File ID
-GOOGLE_DRIVE_FILE_ID = os.getenv("GOOGLE_DRIVE_FILE_ID", "1UvcP7AfnzPy3tOxabbBHhmaOQC8R5X-P")
+# Repository URL for the model
+MODEL_REPO_URL = "https://raw.githubusercontent.com/Youssef18118/plantAppLive/refs/heads/main/plant_disease_model_inception.h5?token=GHSAT0AAAAAAC7RPJ4CIZEAXYRMPGKTXHQ2Z554AWA"
 model_path = "plant_disease_model_inception.h5"
 
-# Function to download model
+# Function to download model from repository
 def download_model():
     if not os.path.exists(model_path):
-        logger.info("Downloading model from Google Drive...")
-        url = f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}"
-        gdown.download(url, model_path, quiet=False)
-        logger.info("Model downloaded successfully!")
+        logger.info("Downloading model from repository...")
+        try:
+            response = requests.get(MODEL_REPO_URL)
+            response.raise_for_status()  # Raise an error for bad status codes
+            with open(model_path, "wb") as file:
+                file.write(response.content)
+            logger.info("Model downloaded successfully!")
+        except Exception as e:
+            logger.error(f"Failed to download model: {e}")
+            raise HTTPException(status_code=500, detail="Failed to download model")
 
 # Download model before loading
 download_model()
