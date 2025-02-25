@@ -2,6 +2,8 @@ fastapi
 uvicorn
 tensorflow
 pillow
-opencv-python-headless
+opencv-python
 python-multipart
 numpy
+aiohttp
+gdown
