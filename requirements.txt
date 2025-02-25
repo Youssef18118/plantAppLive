@@ -1,7 +1,8 @@
-fastapi>=0.68.0
-uvicorn>=0.15.0
-tensorflow>=2.6.0
-numpy>=1.21.0
-Pillow>=8.3.1
-opencv-python-headless>=4.5.3
-requests>=2.26.0
+fastapi==0.103.1
+uvicorn==0.23.2
+tensorflow==2.13.0
+numpy==1.24.3
+Pillow==10.0.0
+opencv-python-headless==4.8.0.76
+requests==2.31.0
+python-multipart==0.0.6
