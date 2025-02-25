@@ -1,3 +1,5 @@
+import os
+import requests
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import tensorflow as tf
@@ -16,8 +18,24 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Google Drive Direct Download Link
+GOOGLE_DRIVE_FILE_ID = "1UvcP7AfnzPy3tOxabbBHhmaOQC8R5X-P"
+model_path = "plant_disease_model_inception.h5"
+
+# Function to download model
+def download_model():
+    if not os.path.exists(model_path):
+        logger.info("Downloading model from Google Drive...")
+        url = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_FILE_ID}"
+        response = requests.get(url)
+        with open(model_path, "wb") as file:
+            file.write(response.content)
+        logger.info("Model downloaded successfully!")
+
+# Download model before loading
+download_model()
+
 # Load model
-model_path = 'plant_disease_model_inception.h5'
 try:
     model = load_model(model_path)
     logger.info("Model loaded successfully!")
@@ -59,18 +77,18 @@ def is_noisy(img_array):
 def enhance_image(img_pil):
     """Apply preprocessing enhancements to the image"""
     img_array = np.array(img_pil)
-    
+
     # Brightness correction
     if is_low_brightness(img_array):
         enhancer = ImageEnhance.Brightness(img_pil)
         img_pil = enhancer.enhance(1.2)
         img_array = np.array(img_pil)
-    
+
     # Noise reduction
     if is_noisy(img_array):
         img_array = cv2.GaussianBlur(img_array, (3, 3), 5)
         img_pil = Image.fromarray(img_array)
-    
+
     return img_pil
 
 @app.post("/predict")
@@ -79,7 +97,7 @@ async def predict(file: UploadFile = File(...)):
         # Read and validate image file
         contents = await file.read()
         img_buffer = io.BytesIO(contents)
-        
+
         try:
             img_pil = Image.open(img_buffer)
         except UnidentifiedImageError:
@@ -87,25 +105,25 @@ async def predict(file: UploadFile = File(...)):
                 status_code=400,
                 detail="Unsupported image format or corrupted file"
             )
-        
+
         # Resize and enhance image
         img_pil = img_pil.resize((299, 299), Image.BILINEAR)
         processed_img = enhance_image(img_pil)
-        
+
         # Preprocess for model
         img_array = image.img_to_array(processed_img)
         img_array = preprocess_input(np.expand_dims(img_array, axis=0))
-        
+
         # Make prediction
         prediction = model.predict(img_array)
         predicted_class = class_names[np.argmax(prediction)]
         confidence = float(np.max(prediction))
-        
+
         return JSONResponse(content={
             "predicted_class": predicted_class,
             "confidence": confidence
         })
-    
+
     except HTTPException as he:
         logger.error(f"HTTPException: {he.detail}")
         raise he
