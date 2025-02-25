@@ -1,4 +1,5 @@
 import os
+import h5py  # Add this import
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import tensorflow as tf
@@ -20,13 +21,23 @@ app = FastAPI()
 # Model path
 model_path = "plant_disease_model_inception.h5"
 
+# Validate the HDF5 file before loading
+try:
+    logger.info("Validating HDF5 file...")
+    with h5py.File(model_path, "r") as f:
+        logger.info("HDF5 file is valid.")
+except Exception as e:
+    logger.error(f"HDF5 file is invalid: {e}")
+    raise HTTPException(status_code=500, detail=f"HDF5 file is invalid: {e}")
+
 # Load model
 try:
+    logger.info(f"Attempting to load model from: {model_path}")
     model = load_model(model_path)
     logger.info("Model loaded successfully!")
 except Exception as e:
     logger.error(f"Error loading model: {e}")
-    raise
+    raise HTTPException(status_code=500, detail=f"Error loading model: {e}")
 
 # Class names
 class_names = [
