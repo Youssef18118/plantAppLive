@@ -1,5 +1,5 @@
 import os
-import requests
+import gdown
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import tensorflow as tf
@@ -18,18 +18,16 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Google Drive Direct Download Link
-GOOGLE_DRIVE_FILE_ID = "1UvcP7AfnzPy3tOxabbBHhmaOQC8R5X-P"
+# Google Drive File ID
+GOOGLE_DRIVE_FILE_ID = os.getenv("GOOGLE_DRIVE_FILE_ID", "1UvcP7AfnzPy3tOxabbBHhmaOQC8R5X-P")
 model_path = "plant_disease_model_inception.h5"
 
 # Function to download model
 def download_model():
     if not os.path.exists(model_path):
         logger.info("Downloading model from Google Drive...")
-        url = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_FILE_ID}"
-        response = requests.get(url)
-        with open(model_path, "wb") as file:
-            file.write(response.content)
+        url = f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}"
+        gdown.download(url, model_path, quiet=False)
         logger.info("Model downloaded successfully!")
 
 # Download model before loading
