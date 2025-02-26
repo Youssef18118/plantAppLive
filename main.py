@@ -11,8 +11,16 @@ from PIL import Image, ImageEnhance
 app = Flask(__name__)
 
 # Load models
-model = load_model('plant_disease_model_inception.h5')
-leaf_model = load_model('leaf-nonleaf.h5')
+model_path = 'plant_disease_model_inception.h5'
+leaf_model_path = 'leaf-nonleaf.h5'
+
+if not os.path.exists(model_path):
+    print(f"Model file not found at {model_path}")
+if not os.path.exists(leaf_model_path):
+    print(f"Leaf model file not found at {leaf_model_path}")
+
+model = load_model(model_path)
+leaf_model = load_model(leaf_model_path)
 
 index_to_class = {
     0: 'Cherry_(including_sour)___Powdery_mildew',
