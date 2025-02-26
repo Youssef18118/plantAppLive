@@ -1,12 +1,9 @@
 # Use an official Python runtime as a parent image
 FROM python:3.8-slim
 
-# Install system dependencies
+# Install only the necessary system dependency
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
-    libsm6 \
-    libxext6 \
-    ffmpeg \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
