@@ -18,6 +18,7 @@ if not os.path.exists(model_path):
     print(f"Model file not found at {model_path}")
 if not os.path.exists(leaf_model_path):
     print(f"Leaf model file not found at {leaf_model_path}")
+print('both models are loaded')
 
 model = load_model(model_path)
 leaf_model = load_model(leaf_model_path)
