@@ -1,5 +1,7 @@
-Flask
+fastapi
+uvicorn
 tensorflow
 numpy
 opencv-python
-Pillow
+pillow
+h5py
