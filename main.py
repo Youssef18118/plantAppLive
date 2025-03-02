@@ -1,24 +1,26 @@
 import os
-import h5py  # Add this import
-from flask import Flask, request, jsonify
+import h5py  # Ensure this import is included
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import JSONResponse
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.applications.inception_v3 import preprocess_input
 import numpy as np
 import cv2
 from PIL import Image, ImageEnhance
+import uvicorn
 
-app = Flask(__name__)
+app = FastAPI()
 
 # Load models
 model_path = 'plant_disease_model_inception.h5'
 leaf_model_path = 'leaf-nonleaf.h5'
 
 if not os.path.exists(model_path):
-    print(f"Model file not found at {model_path}")
+    raise FileNotFoundError(f"Model file not found at {model_path}")
 if not os.path.exists(leaf_model_path):
-    print(f"Leaf model file not found at {leaf_model_path}")
-print('both models are loaded')
+    raise FileNotFoundError(f"Leaf model file not found at {leaf_model_path}")
+print('Both models are loaded')
 
 model = load_model(model_path)
 leaf_model = load_model(leaf_model_path)
@@ -61,7 +63,6 @@ def is_noisy(img_cv, noise_threshold=100):
 def adjust_brightness(img):
     img_cv = np.array(img)
     if is_low_brightness(img_cv):
-        # print("Adjusting brightness for a dark image")
         img_pil = Image.fromarray(img_cv)
         enhancer = ImageEnhance.Brightness(img_pil)
         img_pil = enhancer.enhance(1.2)
@@ -71,17 +72,10 @@ def adjust_brightness(img):
 # Function to reduce noise
 def reduce_noise(img_cv):
     if is_noisy(img_cv):
-        # print("Reducing noise using Gaussian Blur")
         img_cv = cv2.GaussianBlur(img_cv, (3, 3), 0)
     return img_cv
 
-# Function to predict if an image is a leaf
-def is_not_leaf(img_path):
-    img_array = preprocess_image(img_path, target_size=(224, 224))
-    prediction = leaf_model.predict(img_array)
-    return prediction[0][0] > 0.5
-
-# Define your image processing and prediction functions here
+# Function to preprocess an image
 def preprocess_image(img_path, target_size=(299, 299)):
     img = Image.open(img_path).convert('RGB')
     img_cv = np.array(img)
@@ -93,6 +87,13 @@ def preprocess_image(img_path, target_size=(299, 299)):
     img_array = preprocess_input(img_array)
     return np.expand_dims(img_array, axis=0)
 
+# Function to check if image is a leaf
+def is_not_leaf(img_path):
+    img_array = preprocess_image(img_path, target_size=(224, 224))
+    prediction = leaf_model.predict(img_array)
+    return prediction[0][0] > 0.5
+
+# Function to predict plant disease
 def predict_single_image(img_path):
     if not is_not_leaf(img_path):
         img_array = preprocess_image(img_path)
@@ -104,18 +105,16 @@ def predict_single_image(img_path):
     else:
         return {'error': 'Image is not classified as a leaf'}
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-    
-    file = request.files['file']
-    img_path = 'temp.jpg'
-    file.save(img_path)
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        img_path = 'temp.jpg'
+        with open(img_path, "wb") as buffer:
+            buffer.write(await file.read())
+        result = predict_single_image(img_path)
+        return JSONResponse(content=result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Call your prediction function
-    result = predict_single_image(img_path)
-    return jsonify(result)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=5000)
